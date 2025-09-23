@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithm Visualizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+        }
+        .bar {
+            background-color: #ff5722;
+            width: 10px;
+            margin: 0 1px;
+            transition: height 0.3s ease, background-color 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+        .comparing {
+            background-color: #64dd17;
+        }
+        .sorted {
+            background-color: #2e7d32;
+        }
+        .pivot {
+            background-color: #1e88e5; /* Blue for pivot in Quicksort */
+        }
+        #array-container {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            height: 400px;
+            width: 100%;
+            max-width: 900px;
+            margin: 2rem auto;
+            border: 2px solid #3e2e5e;
+            border-radius: 8px;
+            padding: 10px;
+            background-color: #162447;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        .btn-primary {
+            @apply bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-full shadow-lg transition-colors duration-300;
+        }
+        select {
+            @apply bg-[#2d2d46] text-white border-2 border-orange-600 rounded-full py-2 px-4 pr-10;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1.2em;
+        }
+    </style>
+</head>
+<body class="p-8">
+
+    <div class="flex flex-col items-center">
+        <h1 class="text-4xl font-bold mb-2 text-center text-orange-400">Algorithm Visualizer</h1>
+        <p class="text-center text-gray-400 mb-8 max-w-2xl">
+            Visualize different sorting algorithms and see how they work step-by-step. Select an algorithm, adjust the array size, and click 'Start Sorting' to see the process in action.
+        </p>
+
+        <!-- Controls -->
+        <div class="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-8">
+            <div class="flex items-center space-x-2">
+                <label for="algorithm-select" class="text-gray-300">Algorithm:</label>
+                <select id="algorithm-select">
+                    <option value="bubble">Bubble Sort</option>
+                    <option value="quick">Quick Sort</option>
+                    <option value="merge">Merge Sort</option>
+                </select>
+            </div>
+            <div class="flex items-center space-x-2">
+                <label for="array-size" class="text-gray-300">Array Size:</label>
+                <input type="range" id="array-size" min="10" max="150" value="50" class="w-24 md:w-40">
+                <span id="array-size-value" class="text-gray-300">50</span>
+            </div>
+            <button id="generate-btn" class="btn-primary">Generate New Array</button>
+            <button id="start-btn" class="btn-primary">Start Sorting</button>
+            <button id="reset-btn" class="btn-primary">Reset</button>
+        </div>
+
+        <!-- Visualization Area -->
+        <div id="array-container"></div>
+    </div>
+
+    <script>
+        const arrayContainer = document.getElementById('array-container');
+        const generateBtn = document.getElementById('generate-btn');
+        const startBtn = document.getElementById('start-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const arraySizeInput = document.getElementById('array-size');
+        const arraySizeValueSpan = document.getElementById('array-size-value');
+        const algorithmSelect = document.getElementById('algorithm-select');
+
+        let array = [];
+        let arraySize = 50;
+        let isSorting = false;
+        let isSorted = false;
+        let animationFrameId;
+
+        // Function to delay execution for visualization
+        const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        // Function to create and render a new random array
+        function generateArray() {
+            arrayContainer.innerHTML = '';
+            array = [];
+            isSorted = false;
+            for (let i = 0; i < arraySize; i++) {
+                const value = Math.floor(Math.random() * 380) + 20;
+                array.push(value);
+                const bar = document.createElement('div');
+                bar.classList.add('bar');
+                bar.style.height = `${value}px`;
+                arrayContainer.appendChild(bar);
+            }
+            startBtn.textContent = 'Start Sorting';
+            startBtn.disabled = false;
+        }
+
+        // --- Bubble Sort ---
+        async function bubbleSort() {
+            isSorting = true;
+            let n = array.length;
+            for (let i = 0; i < n - 1 && isSorting; i++) {
+                for (let j = 0; j < n - i - 1 && isSorting; j++) {
+                    const bars = document.querySelectorAll('.bar');
+                    bars[j].classList.add('comparing');
+                    bars[j + 1].classList.add('comparing');
+                    await delay(50);
+
+                    if (array[j] > array[j + 1]) {
+                        // Swap elements in the array
+                        [array[j], array[j + 1]] = [array[j + 1], array[j]];
+
+                        // Swap bar heights
+                        const tempHeight = bars[j].style.height;
+                        bars[j].style.height = bars[j + 1].style.height;
+                        bars[j + 1].style.height = tempHeight;
+                    }
+                    bars[j].classList.remove('comparing');
+                    bars[j + 1].classList.remove('comparing');
+                }
+                if (isSorting) {
+                    const bars = document.querySelectorAll('.bar');
+                    bars[n - 1 - i].classList.add('sorted');
+                }
+            }
+            if (isSorting) {
+                const bars = document.querySelectorAll('.bar');
+                bars[0].classList.add('sorted');
+            }
+            isSorting = false;
+            isSorted = true;
+        }
+
+        // --- Quick Sort ---
+        async function partition(low, high) {
+            const bars = document.querySelectorAll('.bar');
+            let pivot = array[high];
+            let i = low - 1;
+
+            bars[high].classList.add('pivot');
+            await delay(100);
+
+            for (let j = low; j < high; j++) {
+                if (!isSorting) return;
+                bars[j].classList.add('comparing');
+                await delay(50);
+                if (array[j] < pivot) {
+                    i++;
+                    [array[i], array[j]] = [array[j], array[i]];
+                    const tempHeight = bars[i].style.height;
+                    bars[i].style.height = bars[j].style.height;
+                    bars[j].style.height = tempHeight;
+                }
+                bars[j].classList.remove('comparing');
+            }
+
+            // Swap pivot to its correct position
+            i++;
+            [array[i], array[high]] = [array[high], array[i]];
+            const tempHeight = bars[i].style.height;
+            bars[i].style.height = bars[high].style.height;
+            bars[high].style.height = tempHeight;
+            
+            bars[high].classList.remove('pivot');
+            bars[i].classList.add('sorted');
+            return i;
+        }
+
+        async function quickSort(low, high) {
+            if (!isSorting || low >= high) {
+                if (low === high) {
+                    const bars = document.querySelectorAll('.bar');
+                    bars[low].classList.add('sorted');
+                }
+                return;
+            }
+
+            let pi = await partition(low, high);
+            await quickSort(low, pi - 1);
+            await quickSort(pi + 1, high);
+        }
+
+        // --- Merge Sort ---
+        async function merge(low, mid, high) {
+            const bars = document.querySelectorAll('.bar');
+            let n1 = mid - low + 1;
+            let n2 = high - mid;
+            let L = new Array(n1);
+            let R = new Array(n2);
+
+            for (let i = 0; i < n1; i++) {
+                L[i] = array[low + i];
+                bars[low + i].classList.add('comparing');
+            }
+            for (let j = 0; j < n2; j++) {
+                R[j] = array[mid + 1 + j];
+                bars[mid + 1 + j].classList.add('comparing');
+            }
+
+            await delay(100);
+
+            let i = 0;
+            let j = 0;
+            let k = low;
+            while (i < n1 && j < n2) {
+                if (!isSorting) return;
+                if (L[i] <= R[j]) {
+                    array[k] = L[i];
+                    bars[k].style.height = `${L[i]}px`;
+                    i++;
+                } else {
+                    array[k] = R[j];
+                    bars[k].style.height = `${R[j]}px`;
+                    j++;
+                }
+                k++;
+                await delay(50);
+            }
+
+            while (i < n1) {
+                if (!isSorting) return;
+                array[k] = L[i];
+                bars[k].style.height = `${L[i]}px`;
+                i++;
+                k++;
+                await delay(50);
+            }
+
+            while (j < n2) {
+                if (!isSorting) return;
+                array[k] = R[j];
+                bars[k].style.height = `${R[j]}px`;
+                j++;
+                k++;
+                await delay(50);
+            }
+
+            // Remove comparing class and add sorted class to the merged section
+            for(let x = low; x <= high; x++) {
+                bars[x].classList.remove('comparing');
+            }
+            if (high - low + 1 === arraySize) {
+                // All bars are sorted
+                for(let x = low; x <= high; x++) {
+                    bars[x].classList.add('sorted');
+                }
+            }
+        }
+
+        async function mergeSort(low, high) {
+            if (!isSorting || low >= high) {
+                return;
+            }
+            let mid = Math.floor(low + (high - low) / 2);
+            await mergeSort(low, mid);
+            await mergeSort(mid + 1, high);
+            await merge(low, mid, high);
+        }
+
+        // Event listeners
+        generateBtn.addEventListener('click', () => {
+            if (isSorting) {
+                isSorting = false;
+            }
+            generateArray();
+        });
+
+        startBtn.addEventListener('click', async () => {
+            if (isSorted || isSorting) {
+                if (isSorting) {
+                    isSorting = false;
+                    startBtn.textContent = 'Resume Sorting';
+                }
+                return;
+            }
+            
+            startBtn.textContent = 'Pause Sorting';
+            isSorting = true;
+            const currentAlgorithm = algorithmSelect.value;
+            switch(currentAlgorithm) {
+                case 'bubble':
+                    await bubbleSort();
+                    break;
+                case 'quick':
+                    await quickSort(0, array.length - 1);
+                    break;
+                case 'merge':
+                    await mergeSort(0, array.length - 1);
+                    break;
+            }
+            
+            if (!isSorting) { // Check if sorting was paused
+                startBtn.textContent = 'Start Sorting';
+            } else { // Check if sorting finished
+                isSorted = true;
+                startBtn.textContent = 'Sorted!';
+                startBtn.disabled = true;
+            }
+        });
+
+        resetBtn.addEventListener('click', () => {
+            if (isSorting) {
+                isSorting = false;
+            }
+            generateArray();
+        });
+
+        arraySizeInput.addEventListener('input', (e) => {
+            arraySize = parseInt(e.target.value, 10);
+            arraySizeValueSpan.textContent = arraySize;
+            if (!isSorting) {
+                generateArray();
+            }
+        });
+        
+        // Initial array generation on page load
+        window.onload = function() {
+            generateArray();
+        };
+
+    </script>
+
+</body>
+</html>
