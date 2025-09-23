@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Algorithm Visualizer</title>
+    <title>Unified Algorithm Visualizer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -11,6 +11,12 @@
             font-family: 'Inter', sans-serif;
             background-color: #1a1a2e;
             color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem;
         }
         .bar {
             background-color: #ff5722;
@@ -20,41 +26,57 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
             border-radius: 4px;
         }
-        .comparing {
+        .bar.comparing {
             background-color: #64dd17;
         }
-        .sorted {
+        .bar.sorted {
             background-color: #2e7d32;
         }
-        .pivot {
-            background-color: #1e88e5; /* Blue for pivot in Quicksort */
+        .bar.pivot {
+            background-color: #1e88e5;
         }
-        #array-container {
+        .node {
+            width: 40px;
+            height: 40px;
             display: flex;
-            align-items: flex-end;
+            align-items: center;
             justify-content: center;
-            height: 400px;
-            width: 100%;
-            max-width: 900px;
-            margin: 2rem auto;
-            border: 2px solid #3e2e5e;
-            border-radius: 8px;
-            padding: 10px;
-            background-color: #162447;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            background-color: #ff5722;
+            color: white;
+            border-radius: 50%;
+            border: 2px solid #ff9800;
+            transition: background-color 0.4s ease, transform 0.2s ease;
+            position: absolute;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+            font-weight: bold;
+        }
+        .node.visited {
+            background-color: #2e7d32;
+            transform: scale(1.1);
+        }
+        .node.current {
+            background-color: #64dd17;
+            transform: scale(1.2);
+            border: 2px solid #aed581;
+        }
+        .line {
+            position: absolute;
+            background-color: #3e2e5e;
+            height: 2px;
+            z-index: -1;
+            transition: background-color 0.4s ease;
+        }
+        .line.visited {
+            background-color: #64dd17;
+        }
+        .controls {
+            @apply flex flex-wrap justify-center items-center space-x-4 space-y-4 sm:space-y-0 mb-8;
         }
         .btn-primary {
             @apply bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-full shadow-lg transition-colors duration-300;
         }
         select {
             @apply bg-[#2d2d46] text-white border-2 border-orange-600 rounded-full py-2 px-4 pr-10;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 0.75rem center;
-            background-size: 1.2em;
         }
     </style>
 </head>
@@ -63,56 +85,163 @@
     <div class="flex flex-col items-center">
         <h1 class="text-4xl font-bold mb-2 text-center text-orange-400">Algorithm Visualizer</h1>
         <p class="text-center text-gray-400 mb-8 max-w-2xl">
-            Visualize different sorting algorithms and see how they work step-by-step. Select an algorithm, adjust the array size, and click 'Start Sorting' to see the process in action.
+            Visualize various sorting and search algorithms.
         </p>
 
-        <!-- Controls -->
-        <div class="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-8">
+        <!-- Main Controls -->
+        <div class="controls">
             <div class="flex items-center space-x-2">
-                <label for="algorithm-select" class="text-gray-300">Algorithm:</label>
-                <select id="algorithm-select">
-                    <option value="bubble">Bubble Sort</option>
-                    <option value="quick">Quick Sort</option>
-                    <option value="merge">Merge Sort</option>
+                <label for="algorithm-type" class="text-gray-300">Algorithm Type:</label>
+                <select id="algorithm-type">
+                    <option value="sorting">Sorting</option>
+                    <option value="searching">Searching</option>
                 </select>
             </div>
             <div class="flex items-center space-x-2">
-                <label for="array-size" class="text-gray-300">Array Size:</label>
-                <input type="range" id="array-size" min="10" max="150" value="50" class="w-24 md:w-40">
-                <span id="array-size-value" class="text-gray-300">50</span>
+                <label for="algorithm-select" class="text-gray-300">Algorithm:</label>
+                <select id="algorithm-select"></select>
             </div>
-            <button id="generate-btn" class="btn-primary">Generate New Array</button>
-            <button id="start-btn" class="btn-primary">Start Sorting</button>
+            <button id="start-btn" class="btn-primary">Start</button>
             <button id="reset-btn" class="btn-primary">Reset</button>
         </div>
 
+        <!-- Dynamic Controls -->
+        <div id="dynamic-controls" class="flex flex-wrap justify-center items-center space-x-4 space-y-4 sm:space-y-0 mb-8"></div>
+
         <!-- Visualization Area -->
-        <div id="array-container"></div>
+        <div id="visualization-container" class="relative w-full max-w-4xl h-[600px] border-2 border-[#3e2e5e] rounded-lg p-4 bg-[#162447] shadow-lg">
+            <div id="message-area" class="text-red-400 text-center mb-4"></div>
+            <div id="array-container" class="flex items-end justify-center h-full w-full"></div>
+            <div id="tree-container" class="relative w-full h-full hidden">
+                <svg id="lines" class="absolute inset-0 w-full h-full z-0"></svg>
+            </div>
+        </div>
     </div>
 
     <script>
+        const algorithmTypeSelect = document.getElementById('algorithm-type');
+        const algorithmSelect = document.getElementById('algorithm-select');
+        const dynamicControlsDiv = document.getElementById('dynamic-controls');
+        const visualizationContainer = document.getElementById('visualization-container');
         const arrayContainer = document.getElementById('array-container');
-        const generateBtn = document.getElementById('generate-btn');
+        const treeContainer = document.getElementById('tree-container');
+        const linesSvg = document.getElementById('lines');
         const startBtn = document.getElementById('start-btn');
         const resetBtn = document.getElementById('reset-btn');
-        const arraySizeInput = document.getElementById('array-size');
-        const arraySizeValueSpan = document.getElementById('array-size-value');
-        const algorithmSelect = document.getElementById('algorithm-select');
+        const messageArea = document.getElementById('message-area');
 
+        let isRunning = false;
         let array = [];
         let arraySize = 50;
-        let isSorting = false;
-        let isSorted = false;
-        let animationFrameId;
+        let nodePositions = {};
+        
+        // Tree data for search algorithms
+        const treeData = {
+            id: 'A',
+            children: [
+                { id: 'B', children: [{ id: 'D' }, { id: 'E' }] },
+                { id: 'C', children: [{ id: 'F' }, { id: 'G' }] }
+            ]
+        };
 
-        // Function to delay execution for visualization
+        // UI state management
+        function renderUI() {
+            const type = algorithmTypeSelect.value;
+            algorithmSelect.innerHTML = '';
+            dynamicControlsDiv.innerHTML = '';
+            visualizationContainer.classList.remove('h-full');
+            messageArea.textContent = '';
+
+            if (type === 'sorting') {
+                visualizationContainer.classList.add('h-[600px]');
+                arrayContainer.style.display = 'flex';
+                treeContainer.style.display = 'none';
+                
+                ['Bubble Sort', 'Quick Sort', 'Merge Sort'].forEach(algo => {
+                    const option = document.createElement('option');
+                    option.value = algo.toLowerCase().replace(' ', '-');
+                    option.textContent = algo;
+                    algorithmSelect.appendChild(option);
+                });
+
+                // Add sorting-specific controls
+                dynamicControlsDiv.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <label for="array-size" class="text-gray-300">Array Size:</label>
+                        <input type="range" id="array-size" min="10" max="150" value="${arraySize}" class="w-24 md:w-40">
+                        <span id="array-size-value" class="text-gray-300">${arraySize}</span>
+                    </div>
+                    <button id="generate-btn" class="btn-primary">Generate New Array</button>
+                `;
+
+                // Add event listeners for sorting controls
+                const arraySizeInput = document.getElementById('array-size');
+                const arraySizeValueSpan = document.getElementById('array-size-value');
+                const generateBtn = document.getElementById('generate-btn');
+                
+                arraySizeInput.addEventListener('input', (e) => {
+                    arraySize = parseInt(e.target.value, 10);
+                    arraySizeValueSpan.textContent = arraySize;
+                    if (!isRunning) generateArray();
+                });
+                
+                generateBtn.addEventListener('click', () => {
+                    if (isRunning) isRunning = false;
+                    generateArray();
+                });
+                
+                generateArray();
+            } else if (type === 'searching') {
+                visualizationContainer.classList.add('h-[600px]');
+                arrayContainer.style.display = 'none';
+                treeContainer.style.display = 'block';
+
+                ['Breadth-First Search (BFS)', 'Depth-First Search (DFS)'].forEach(algo => {
+                    const option = document.createElement('option');
+                    option.value = algo.toLowerCase().split('(')[0].trim();
+                    option.textContent = algo;
+                    algorithmSelect.appendChild(option);
+                });
+
+                // Add searching-specific controls
+                dynamicControlsDiv.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <label for="target-node" class="text-gray-300">Target Node:</label>
+                        <input type="text" id="target-node" class="bg-[#2d2d46] text-white border-2 border-orange-600 rounded-full py-2 px-4 w-28" placeholder="e.g. G" maxlength="1">
+                    </div>
+                `;
+                
+                renderTree(treeData, treeContainer.offsetWidth / 2 - 20, 50, 0);
+            }
+            resetVisualizer();
+        }
+
+        function resetVisualizer() {
+            isRunning = false;
+            startBtn.textContent = 'Start';
+            startBtn.disabled = false;
+            messageArea.textContent = '';
+            
+            const nodes = document.querySelectorAll('.node');
+            nodes.forEach(node => {
+                node.classList.remove('visited', 'current');
+            });
+
+            const bars = document.querySelectorAll('.bar');
+            bars.forEach(bar => {
+                bar.classList.remove('sorted', 'comparing', 'pivot');
+            });
+            
+            linesSvg.innerHTML = '';
+            renderTree(treeData, treeContainer.offsetWidth / 2 - 20, 50, 0);
+        }
+
+        // --- Sorting Functions ---
         const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-        // Function to create and render a new random array
         function generateArray() {
             arrayContainer.innerHTML = '';
             array = [];
-            isSorted = false;
             for (let i = 0; i < arraySize; i++) {
                 const value = Math.floor(Math.random() * 380) + 20;
                 array.push(value);
@@ -121,26 +250,19 @@
                 bar.style.height = `${value}px`;
                 arrayContainer.appendChild(bar);
             }
-            startBtn.textContent = 'Start Sorting';
-            startBtn.disabled = false;
+            resetVisualizer();
         }
 
-        // --- Bubble Sort ---
         async function bubbleSort() {
-            isSorting = true;
             let n = array.length;
-            for (let i = 0; i < n - 1 && isSorting; i++) {
-                for (let j = 0; j < n - i - 1 && isSorting; j++) {
+            for (let i = 0; i < n - 1 && isRunning; i++) {
+                for (let j = 0; j < n - i - 1 && isRunning; j++) {
                     const bars = document.querySelectorAll('.bar');
                     bars[j].classList.add('comparing');
                     bars[j + 1].classList.add('comparing');
                     await delay(50);
-
                     if (array[j] > array[j + 1]) {
-                        // Swap elements in the array
                         [array[j], array[j + 1]] = [array[j + 1], array[j]];
-
-                        // Swap bar heights
                         const tempHeight = bars[j].style.height;
                         bars[j].style.height = bars[j + 1].style.height;
                         bars[j + 1].style.height = tempHeight;
@@ -148,30 +270,19 @@
                     bars[j].classList.remove('comparing');
                     bars[j + 1].classList.remove('comparing');
                 }
-                if (isSorting) {
-                    const bars = document.querySelectorAll('.bar');
-                    bars[n - 1 - i].classList.add('sorted');
-                }
+                if (isRunning) document.querySelectorAll('.bar')[n - 1 - i].classList.add('sorted');
             }
-            if (isSorting) {
-                const bars = document.querySelectorAll('.bar');
-                bars[0].classList.add('sorted');
-            }
-            isSorting = false;
-            isSorted = true;
+            if (isRunning) document.querySelectorAll('.bar')[0].classList.add('sorted');
         }
 
-        // --- Quick Sort ---
         async function partition(low, high) {
             const bars = document.querySelectorAll('.bar');
             let pivot = array[high];
             let i = low - 1;
-
             bars[high].classList.add('pivot');
             await delay(100);
-
             for (let j = low; j < high; j++) {
-                if (!isSorting) return;
+                if (!isRunning) return;
                 bars[j].classList.add('comparing');
                 await delay(50);
                 if (array[j] < pivot) {
@@ -183,57 +294,36 @@
                 }
                 bars[j].classList.remove('comparing');
             }
-
-            // Swap pivot to its correct position
             i++;
             [array[i], array[high]] = [array[high], array[i]];
             const tempHeight = bars[i].style.height;
             bars[i].style.height = bars[high].style.height;
             bars[high].style.height = tempHeight;
-            
             bars[high].classList.remove('pivot');
             bars[i].classList.add('sorted');
             return i;
         }
 
         async function quickSort(low, high) {
-            if (!isSorting || low >= high) {
-                if (low === high) {
-                    const bars = document.querySelectorAll('.bar');
-                    bars[low].classList.add('sorted');
-                }
+            if (!isRunning || low >= high) {
+                if (low === high) document.querySelectorAll('.bar')[low].classList.add('sorted');
                 return;
             }
-
             let pi = await partition(low, high);
             await quickSort(low, pi - 1);
             await quickSort(pi + 1, high);
         }
 
-        // --- Merge Sort ---
         async function merge(low, mid, high) {
             const bars = document.querySelectorAll('.bar');
             let n1 = mid - low + 1;
             let n2 = high - mid;
             let L = new Array(n1);
             let R = new Array(n2);
-
-            for (let i = 0; i < n1; i++) {
-                L[i] = array[low + i];
-                bars[low + i].classList.add('comparing');
-            }
-            for (let j = 0; j < n2; j++) {
-                R[j] = array[mid + 1 + j];
-                bars[mid + 1 + j].classList.add('comparing');
-            }
-
-            await delay(100);
-
-            let i = 0;
-            let j = 0;
-            let k = low;
-            while (i < n1 && j < n2) {
-                if (!isSorting) return;
+            for (let i = 0; i < n1; i++) L[i] = array[low + i];
+            for (let j = 0; j < n2; j++) R[j] = array[mid + 1 + j];
+            let i = 0, j = 0, k = low;
+            while (i < n1 && j < n2 && isRunning) {
                 if (L[i] <= R[j]) {
                     array[k] = L[i];
                     bars[k].style.height = `${L[i]}px`;
@@ -246,109 +336,193 @@
                 k++;
                 await delay(50);
             }
-
-            while (i < n1) {
-                if (!isSorting) return;
+            while (i < n1 && isRunning) {
                 array[k] = L[i];
                 bars[k].style.height = `${L[i]}px`;
                 i++;
                 k++;
                 await delay(50);
             }
-
-            while (j < n2) {
-                if (!isSorting) return;
+            while (j < n2 && isRunning) {
                 array[k] = R[j];
                 bars[k].style.height = `${R[j]}px`;
                 j++;
                 k++;
                 await delay(50);
             }
-
-            // Remove comparing class and add sorted class to the merged section
-            for(let x = low; x <= high; x++) {
-                bars[x].classList.remove('comparing');
-            }
             if (high - low + 1 === arraySize) {
-                // All bars are sorted
-                for(let x = low; x <= high; x++) {
-                    bars[x].classList.add('sorted');
-                }
+                for(let x = low; x <= high; x++) bars[x].classList.add('sorted');
             }
         }
 
         async function mergeSort(low, high) {
-            if (!isSorting || low >= high) {
-                return;
-            }
+            if (!isRunning || low >= high) return;
             let mid = Math.floor(low + (high - low) / 2);
             await mergeSort(low, mid);
             await mergeSort(mid + 1, high);
             await merge(low, mid, high);
         }
 
-        // Event listeners
-        generateBtn.addEventListener('click', () => {
-            if (isSorting) {
-                isSorting = false;
-            }
-            generateArray();
-        });
+        // --- Search Functions ---
+        function drawLines(parentPos, childPos) {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', parentPos.x);
+            line.setAttribute('y1', parentPos.y);
+            line.setAttribute('x2', childPos.x);
+            line.setAttribute('y2', childPos.y);
+            line.setAttribute('stroke', '#3e2e5e');
+            line.setAttribute('stroke-width', '2');
+            line.classList.add('line');
+            linesSvg.appendChild(line);
+            return line;
+        }
 
-        startBtn.addEventListener('click', async () => {
-            if (isSorted || isSorting) {
-                if (isSorting) {
-                    isSorting = false;
-                    startBtn.textContent = 'Resume Sorting';
+        function renderTree(node, x, y, parent = null) {
+            const nodeElement = document.createElement('div');
+            nodeElement.classList.add('node');
+            nodeElement.textContent = node.id;
+            nodeElement.style.left = `${x}px`;
+            nodeElement.style.top = `${y}px`;
+            nodeElement.dataset.id = node.id;
+            treeContainer.appendChild(nodeElement);
+            nodePositions[node.id] = { x: x + 20, y: y + 20, element: nodeElement };
+            if (parent) {
+                const parentPos = nodePositions[parent.id];
+                drawLines(parentPos, nodePositions[node.id]);
+            }
+            if (node.children) {
+                const numChildren = node.children.length;
+                const startX = x - ((numChildren - 1) * 100 / 2);
+                node.children.forEach((child, index) => {
+                    const childX = startX + (index * 100);
+                    const childY = y + 150;
+                    renderTree(child, childX, childY, node);
+                });
+            }
+        }
+
+        function findNodeById(node, id) {
+            if (node.id === id) return node;
+            if (node.children) {
+                for (const child of node.children) {
+                    const found = findNodeById(child, id);
+                    if (found) return found;
                 }
+            }
+            return null;
+        }
+
+        async function bfs(startNodeId, targetNodeId) {
+            const queue = [startNodeId];
+            const visited = new Set();
+            visited.add(startNodeId);
+            isRunning = true;
+            let found = false;
+            while (queue.length > 0 && isRunning) {
+                const currentNodeId = queue.shift();
+                const currentNodeElement = nodePositions[currentNodeId].element;
+                currentNodeElement.classList.add('current');
+                await delay(500);
+                currentNodeElement.classList.remove('current');
+                currentNodeElement.classList.add('visited');
+                if (currentNodeId === targetNodeId) {
+                    startBtn.textContent = `Found ${targetNodeId}!`;
+                    found = true;
+                    break;
+                }
+                const currentNodeData = findNodeById(treeData, currentNodeId);
+                if (currentNodeData.children) {
+                    for (const child of currentNodeData.children) {
+                        if (!visited.has(child.id)) {
+                            visited.add(child.id);
+                            queue.push(child.id);
+                        }
+                    }
+                }
+                await delay(200);
+            }
+            if (!found && isRunning) startBtn.textContent = 'Target not found.';
+            isRunning = false;
+        }
+
+        async function dfs(startNodeId, targetNodeId) {
+            const stack = [startNodeId];
+            const visited = new Set();
+            visited.add(startNodeId);
+            isRunning = true;
+            let found = false;
+            while (stack.length > 0 && isRunning) {
+                const currentNodeId = stack.pop();
+                const currentNodeElement = nodePositions[currentNodeId].element;
+                currentNodeElement.classList.add('current');
+                await delay(500);
+                currentNodeElement.classList.remove('current');
+                currentNodeElement.classList.add('visited');
+                if (currentNodeId === targetNodeId) {
+                    startBtn.textContent = `Found ${targetNodeId}!`;
+                    found = true;
+                    break;
+                }
+                const currentNodeData = findNodeById(treeData, currentNodeId);
+                if (currentNodeData.children) {
+                    const children = currentNodeData.children.slice().reverse();
+                    for (const child of children) {
+                        if (!visited.has(child.id)) {
+                            visited.add(child.id);
+                            stack.push(child.id);
+                        }
+                    }
+                }
+                await delay(200);
+            }
+            if (!found && isRunning) startBtn.textContent = 'Target not found.';
+            isRunning = false;
+        }
+        
+        // Event Listeners
+        algorithmTypeSelect.addEventListener('change', renderUI);
+        
+        startBtn.addEventListener('click', async () => {
+            if (isRunning) return;
+            const type = algorithmTypeSelect.value;
+            const selectedAlgorithm = algorithmSelect.value;
+            const targetNodeInput = document.getElementById('target-node');
+            
+            if (type === 'searching' && (!targetNodeInput || !targetNodeInput.value)) {
+                messageArea.textContent = 'Please enter a target node.';
                 return;
             }
             
-            startBtn.textContent = 'Pause Sorting';
-            isSorting = true;
-            const currentAlgorithm = algorithmSelect.value;
-            switch(currentAlgorithm) {
-                case 'bubble':
-                    await bubbleSort();
-                    break;
-                case 'quick':
-                    await quickSort(0, array.length - 1);
-                    break;
-                case 'merge':
-                    await mergeSort(0, array.length - 1);
-                    break;
-            }
+            resetVisualizer();
+            isRunning = true;
+            startBtn.textContent = 'Running...';
             
-            if (!isSorting) { // Check if sorting was paused
-                startBtn.textContent = 'Start Sorting';
-            } else { // Check if sorting finished
-                isSorted = true;
-                startBtn.textContent = 'Sorted!';
-                startBtn.disabled = true;
+            if (type === 'sorting') {
+                switch(selectedAlgorithm) {
+                    case 'bubble-sort': await bubbleSort(); break;
+                    case 'quick-sort': await quickSort(0, array.length - 1); break;
+                    case 'merge-sort': await mergeSort(0, array.length - 1); break;
+                }
+                if (!isRunning) startBtn.textContent = 'Paused';
+                else startBtn.textContent = 'Sorting Complete!';
+            } else if (type === 'searching') {
+                const targetNode = targetNodeInput.value.toUpperCase();
+                if (selectedAlgorithm === 'bfs') {
+                    await bfs('A', targetNode);
+                } else if (selectedAlgorithm === 'dfs') {
+                    await dfs('A', targetNode);
+                }
             }
+            if (!isRunning) startBtn.disabled = true;
         });
 
         resetBtn.addEventListener('click', () => {
-            if (isSorting) {
-                isSorting = false;
-            }
-            generateArray();
-        });
-
-        arraySizeInput.addEventListener('input', (e) => {
-            arraySize = parseInt(e.target.value, 10);
-            arraySizeValueSpan.textContent = arraySize;
-            if (!isSorting) {
-                generateArray();
-            }
+            resetVisualizer();
         });
         
-        // Initial array generation on page load
         window.onload = function() {
-            generateArray();
+            renderUI();
         };
-
     </script>
-
 </body>
 </html>
