@@ -1,10 +1,11 @@
+# Use the official lightweight Nginx image
 FROM nginx:alpine
 
-# Copy the HTML file into the default Nginx web directory
-COPY visualizer.html /usr/share/nginx/html/index.html
+# Copy all local files (index.html, script.js) into the Nginx web root directory
+COPY . /usr/share/nginx/html/
 
-#  Expose port 80 (Nginx default)
+# Expose port 80 (Nginx's default port)
 EXPOSE 80
 
-# Command to start Nginx
+# The default command to start Nginx in the foreground
 CMD ["nginx", "-g", "daemon off;"]
