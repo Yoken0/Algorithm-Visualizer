@@ -9,7 +9,7 @@
 
 **An interactive web application that brings algorithms to life through beautiful visualizations**
 
-[🌐 Live Demo](http://localhost:8000) • [📖 Documentation](#documentation) • [🎯 Features](#features)
+[🌐 Live Demo](http://localhost:8000) 
 
 </div>
 
