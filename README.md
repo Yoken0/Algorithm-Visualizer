@@ -213,9 +213,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Contact
 
-**Your Name** - [@yourusername](https://github.com/yourusername)
+**Your Name** - [@Yoken0](https://github.com/Yoken0)
 
-Project Link: [https://github.com/yourusername/algorithm-visualizer](https://github.com/yourusername/algorithm-visualizer)
+Project Link: [https://github.com/Yoken0/algorithm-visualizer](https://github.com/Yoken0/algorithm-visualizer)
 
 ---
 
