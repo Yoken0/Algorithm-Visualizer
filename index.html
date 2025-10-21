@@ -17,30 +17,76 @@
         </p>
 
         <div class="controls">
-            <div class="flex items-center space-x-2">
+            <div id="single-algorithm-controls" class="flex items-center space-x-2">
                 <label for="algorithm-type" class="text-gray-300">Type:</label>
                 <select id="algorithm-type">
                     <option value="sorting">Sorting</option>
                     <option value="searching">Searching</option>
                 </select>
             </div>
-            <div class="flex items-center space-x-2">
+            <div id="single-algorithm-select" class="flex items-center space-x-2">
                 <label for="algorithm-select" class="text-gray-300">Algorithm:</label>
                 <select id="algorithm-select"></select>
             </div>
-            <button id="start-btn" class="btn-primary">Start</button>
-            <button id="reset-btn" class="btn-primary">Reset</button>
+            <div id="single-algorithm-buttons" class="flex items-center space-x-2">
+                <button id="start-btn" class="btn-primary">Start</button>
+                <button id="reset-btn" class="btn-primary">Reset</button>
+            </div>
+            <div id="volume-controls" class="flex items-center space-x-2">
+                <label for="volume-control" class="text-gray-300">Volume:</label>
+                <input type="range" id="volume-control" min="0" max="100" value="10" class="w-20">
+                <button id="mute-btn" class="btn-primary">Mute</button>
+            </div>
+            <div class="flex items-center space-x-2 ml-auto">
+                <label class="text-gray-300">
+                    <input type="checkbox" id="algorithm-comparison"> Compare Algorithms
+                </label>
+            </div>
+            <div id="comparison-controls" class="hidden flex items-center space-x-2">
+                <label for="comparison-algorithm-1" class="text-gray-300">Algorithm 1:</label>
+                <select id="comparison-algorithm-1">
+                    <option value="bubble-sort">Bubble Sort</option>
+                    <option value="quick-sort">Quick Sort</option>
+                    <option value="merge-sort">Merge Sort</option>
+                </select>
+                <label for="comparison-algorithm-2" class="text-gray-300">Algorithm 2:</label>
+                <select id="comparison-algorithm-2">
+                    <option value="bubble-sort">Bubble Sort</option>
+                    <option value="quick-sort">Quick Sort</option>
+                    <option value="merge-sort">Merge Sort</option>
+                </select>
+                <button id="start-comparison-btn" class="btn-primary">Start Comparison</button>
+                <button id="reset-comparison-btn" class="btn-primary">Reset</button>
+            </div>
         </div>
 
         <div id="dynamic-controls" class="controls"></div>
 
+        <!-- Normal Mode Visualization -->
         <div id="visualization-container" class="relative w-full max-w-4xl h-[600px] border-2 border-[#3e2e5e] rounded-lg p-4 bg-[#162447] shadow-lg">
             <div id="message-area" class="absolute top-2 left-1/2 -translate-x-1/2 text-red-400"></div>
             <div id="array-container" class="flex items-end justify-center h-full w-full"></div>
             <div id="tree-container" class="relative w-full h-full hidden"></div>
         </div>
+
+        <!-- Comparison Mode Visualization -->
+        <div id="comparison-mode" class="hidden w-full max-w-6xl">
+            <div class="grid grid-cols-2 gap-4">
+                <div class="border-2 border-[#3e2e5e] rounded-lg p-4 bg-[#162447] shadow-lg">
+                    <h3 class="text-center text-orange-400 mb-2" id="algorithm-1-label">Algorithm 1</h3>
+                    <div id="comparison-container-1" class="flex items-end justify-center h-[500px] w-full"></div>
+                </div>
+                <div class="border-2 border-[#3e2e5e] rounded-lg p-4 bg-[#162447] shadow-lg">
+                    <h3 class="text-center text-orange-400 mb-2" id="algorithm-2-label">Algorithm 2</h3>
+                    <div id="comparison-container-2" class="flex items-end justify-center h-[500px] w-full"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <script src="audio.js" defer></script>
+    <script src="sorting.js" defer></script>
+    <script src="comparison.js" defer></script>
     <script src="script.js" defer></script>
 </body>
 </html>

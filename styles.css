@@ -25,14 +25,32 @@ body {
 
 .bar.comparing { 
     background-color: #64dd17; 
+    box-shadow: 0 0 10px #64dd17;
+    transform: scale(1.05);
 }
 
 .bar.sorted { 
     background-color: #2e7d32; 
+    box-shadow: 0 0 8px #2e7d32;
 }
 
 .bar.pivot { 
     background-color: #1e88e5; 
+    box-shadow: 0 0 12px #1e88e5;
+    transform: scale(1.1);
+}
+
+.bar.musical-highlight {
+    border: 3px solid #ffeb3b;
+    box-shadow: 0 0 15px #ffeb3b, inset 0 0 10px rgba(255, 235, 59, 0.3);
+    transform: scale(1.1);
+    animation: musical-pulse 0.2s ease-in-out;
+}
+
+@keyframes musical-pulse {
+    0% { transform: scale(1.05); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1.1); }
 }
 
 .bar.found {
@@ -117,6 +135,25 @@ body {
     align-items: center;
     gap: 1rem;
     margin-bottom: 2rem;
+}
+
+/* Smooth transitions for control visibility */
+#single-algorithm-controls,
+#single-algorithm-select,
+#single-algorithm-buttons,
+#volume-controls,
+#comparison-controls {
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+#single-algorithm-controls.hidden,
+#single-algorithm-select.hidden,
+#single-algorithm-buttons.hidden,
+#volume-controls.hidden,
+#comparison-controls.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
 }
 
 .btn-primary {
@@ -227,6 +264,35 @@ input[type="text"] {
     0% { transform: scale(1); }
     50% { transform: scale(1.1); }
     100% { transform: scale(1); }
+}
+
+/* Comparison Mode Styles */
+#comparison-mode {
+    margin-top: 2rem;
+}
+
+#comparison-container-1, #comparison-container-2 {
+    min-height: 500px;
+}
+
+#comparison-container-1 .bar, #comparison-container-2 .bar {
+    width: 8px;
+    margin: 0 0.5px;
+}
+
+#algorithm-1-label, #algorithm-2-label {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    background-color: rgba(255, 87, 34, 0.1);
+    border-radius: 8px;
+    border: 1px solid #ff5722;
+}
+
+/* Enhanced bar transitions */
+.bar {
+    transition: height 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
 }
 
 /* Responsive Design */

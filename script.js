@@ -1,4 +1,11 @@
+// Main Application for Algorithm Visualizer
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize systems
+    const audioSystem = new AudioSystem();
+    const sortingAlgorithms = new SortingAlgorithms(audioSystem);
+    const comparisonSystem = new ComparisonSystem(audioSystem, sortingAlgorithms);
+
+    // DOM elements
     const algorithmTypeSelect = document.getElementById('algorithm-type');
     const algorithmSelect = document.getElementById('algorithm-select');
     const dynamicControlsDiv = document.getElementById('dynamic-controls');
@@ -7,7 +14,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const startBtn = document.getElementById('start-btn');
     const resetBtn = document.getElementById('reset-btn');
     const messageArea = document.getElementById('message-area');
+    const visualizationContainer = document.getElementById('visualization-container');
+    const comparisonMode = document.getElementById('comparison-mode');
+    const comparisonControls = document.getElementById('comparison-controls');
+    const algorithmComparisonCheckbox = document.getElementById('algorithm-comparison');
+    const comparisonAlgorithm1 = document.getElementById('comparison-algorithm-1');
+    const comparisonAlgorithm2 = document.getElementById('comparison-algorithm-2');
+    const startComparisonBtn = document.getElementById('start-comparison-btn');
+    const resetComparisonBtn = document.getElementById('reset-comparison-btn');
+    const volumeControl = document.getElementById('volume-control');
+    const muteBtn = document.getElementById('mute-btn');
+    
+    // Single algorithm control elements
+    const singleAlgorithmControls = document.getElementById('single-algorithm-controls');
+    const singleAlgorithmSelect = document.getElementById('single-algorithm-select');
+    const singleAlgorithmButtons = document.getElementById('single-algorithm-buttons');
+    const volumeControls = document.getElementById('volume-controls');
 
+    // Application state
     let isRunning = false;
     let array = [];
     let arraySize = 50;
@@ -77,12 +101,22 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('array-size').addEventListener('input', (e) => {
                 arraySize = parseInt(e.target.value, 10);
                 document.getElementById('array-size-value').textContent = arraySize;
-                if (!isRunning) generateArray();
+                if (!isRunning) {
+                    generateArray();
+                    // If in comparison mode, also regenerate comparison arrays
+                    if (algorithmComparisonCheckbox.checked) {
+                        comparisonSystem.generateComparisonArrays(arraySize);
+                    }
+                }
             });
             
             document.getElementById('generate-btn').addEventListener('click', () => {
                 if (isRunning) isRunning = false;
                 generateArray();
+                // If in comparison mode, also regenerate comparison arrays
+                if (algorithmComparisonCheckbox.checked) {
+                    comparisonSystem.generateComparisonArrays(arraySize);
+                }
             });
             
             generateArray();
@@ -99,7 +133,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 algorithmSelect.appendChild(option);
             });
 
-            // Set up controls based on selected algorithm
             updateSearchControls();
         }
     }
@@ -122,13 +155,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
             
-            // Clear containers and state before rendering to prevent duplicates
             treeContainer.innerHTML = '';
             nodePositions = {};
             lineElements = {};
             renderWeightedGraph(dijkstraGraphData, 0, 0, 0);
         } else {
-            // Tree search algorithms (BFS/DFS)
             arrayContainer.style.display = 'none';
             treeContainer.style.display = 'block';
             
@@ -139,7 +170,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
             
-            // Clear containers and state before rendering to prevent duplicates
             treeContainer.innerHTML = '';
             nodePositions = {};
             lineElements = {};
@@ -159,8 +189,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Sorting Functions ---
-    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
     function generateArray() {
         arrayContainer.innerHTML = '';
         array = [];
@@ -175,120 +203,12 @@ document.addEventListener('DOMContentLoaded', () => {
         resetVisualizer();
     }
 
-    
-    // ... (Bubble, Quick, Merge Sort functions remain the same as in your original file)
-    async function bubbleSort() {
-        let n = array.length;
-        const bars = document.querySelectorAll('.bar');
-        for (let i = 0; i < n - 1 && isRunning; i++) {
-            for (let j = 0; j < n - i - 1 && isRunning; j++) {
-                bars[j].classList.add('comparing');
-                bars[j + 1].classList.add('comparing');
-                await delay(30);
-                if (array[j] > array[j + 1]) {
-                    [array[j], array[j + 1]] = [array[j + 1], array[j]];
-                    [bars[j].style.height, bars[j+1].style.height] = [bars[j+1].style.height, bars[j].style.height];
-                }
-                bars[j].classList.remove('comparing');
-                bars[j + 1].classList.remove('comparing');
-            }
-            if (isRunning) bars[n - 1 - i].classList.add('sorted');
-        }
-        if (isRunning && n > 0) bars[0].classList.add('sorted');
-    }
-
-    async function partition(low, high) {
-        if (!isRunning) return;
-        const bars = document.querySelectorAll('.bar');
-        let pivot = array[high];
-        let i = low - 1;
-        bars[high].classList.add('pivot');
-        for (let j = low; j < high; j++) {
-            if (!isRunning) return;
-            bars[j].classList.add('comparing');
-            await delay(50);
-            if (array[j] < pivot) {
-                i++;
-                [array[i], array[j]] = [array[j], array[i]];
-                [bars[i].style.height, bars[j].style.height] = [bars[j].style.height, bars[i].style.height];
-            }
-            bars[j].classList.remove('comparing');
-        }
-        i++;
-        [array[i], array[high]] = [array[high], array[i]];
-        [bars[i].style.height, bars[high].style.height] = [bars[high].style.height, bars[i].style.height];
-        bars[high].classList.remove('pivot');
-        bars[i].classList.add('sorted');
-        return i;
-    }
-
-    async function quickSort(low, high) {
-        if (!isRunning || low >= high) {
-            if (low === high) document.querySelectorAll('.bar')[low]?.classList.add('sorted');
-            return;
-        }
-        let pi = await partition(low, high);
-        if (pi === undefined) return;
-        await Promise.all([quickSort(low, pi - 1), quickSort(pi + 1, high)]);
-    }
-
-    async function merge(low, mid, high) {
-        if (!isRunning) return;
-        const bars = document.querySelectorAll('.bar');
-        let n1 = mid - low + 1, n2 = high - mid;
-        let L = array.slice(low, mid + 1);
-        let R = array.slice(mid + 1, high + 1);
-        let i = 0, j = 0, k = low;
-        while (i < n1 && j < n2 && isRunning) {
-            bars[k].classList.add('comparing');
-            await delay(30);
-            if (L[i] <= R[j]) {
-                array[k] = L[i];
-                bars[k].style.height = `${L[i]}px`;
-                i++;
-            } else {
-                array[k] = R[j];
-                bars[k].style.height = `${R[j]}px`;
-                j++;
-            }
-            bars[k].classList.remove('comparing');
-            k++;
-        }
-        while (i < n1 && isRunning) {
-            array[k] = L[i];
-            bars[k].style.height = `${L[i]}px`;
-            i++; k++;
-            await delay(30);
-        }
-        while (j < n2 && isRunning) {
-            array[k] = R[j];
-            bars[k].style.height = `${R[j]}px`;
-            j++; k++;
-            await delay(30);
-        }
-    }
-
-    async function mergeSort(low, high) {
-        if (!isRunning || low >= high) return;
-        let mid = Math.floor(low + (high - low) / 2);
-        await mergeSort(low, mid);
-        await mergeSort(mid + 1, high);
-        await merge(low, mid, high);
-        if (low === 0 && high === array.length - 1) {
-            for(let i = 0; i < array.length; i++) {
-                 document.querySelectorAll('.bar')[i].classList.add('sorted');
-            }
-        }
-    }
-
-    // --- Search Functions ---
+    // --- Search Functions (keeping existing search functionality) ---
     function renderWeightedGraph(graphData, startX, startY, level = 0) {
-        // Clear existing elements
         treeContainer.innerHTML = '';
         nodePositions = {};
         lineElements = {};
         
-        // Render nodes
         graphData.nodes.forEach(node => {
             const nodeElement = document.createElement('div');
             nodeElement.classList.add('node');
@@ -301,7 +221,6 @@ document.addEventListener('DOMContentLoaded', () => {
             nodePositions[node.id] = { x: node.x + 20, y: node.y + 20, element: nodeElement };
         });
         
-        // Render edges with weights
         graphData.edges.forEach(edge => {
             const fromPos = nodePositions[edge.from];
             const toPos = nodePositions[edge.to];
@@ -323,7 +242,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 treeContainer.appendChild(line);
                 lineElements[`${edge.from}-${edge.to}`] = line;
                 
-                // Add weight label
                 const weightLabel = document.createElement('div');
                 weightLabel.classList.add('weight-label');
                 weightLabel.textContent = edge.weight;
@@ -334,12 +252,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Keep existing search algorithms (BFS, DFS, Dijkstra) - simplified for brevity
     async function dijkstra(startNodeId, targetNodeId) {
+        // Implementation remains the same as before
         const distances = {};
         const previous = {};
         const unvisited = new Set();
         
-        // Initialize distances
         dijkstraGraphData.nodes.forEach(node => {
             distances[node.id] = node.id === startNodeId ? 0 : Infinity;
             previous[node.id] = null;
@@ -348,10 +267,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const currentNodeElement = nodePositions[startNodeId].element;
         currentNodeElement.classList.add('current');
-        await delay(500);
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         while (unvisited.size > 0 && isRunning) {
-            // Find the unvisited node with the smallest distance
             let current = null;
             let minDistance = Infinity;
             
@@ -366,17 +284,15 @@ document.addEventListener('DOMContentLoaded', () => {
             
             unvisited.delete(current);
             
-            // Highlight current node
             const currentElement = nodePositions[current].element;
             currentElement.classList.add('current');
-            await delay(300);
+            await new Promise(resolve => setTimeout(resolve, 300));
             
             if (current === targetNodeId) {
                 messageArea.textContent = `Shortest path to ${targetNodeId} found! Distance: ${distances[current]}`;
                 break;
             }
             
-            // Check all neighbors
             for (const edge of dijkstraGraphData.edges) {
                 if (edge.from === current && unvisited.has(edge.to)) {
                     const newDistance = distances[current] + edge.weight;
@@ -385,20 +301,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         distances[edge.to] = newDistance;
                         previous[edge.to] = current;
                         
-                        // Highlight the edge being considered
                         const edgeKey = `${edge.from}-${edge.to}`;
                         lineElements[edgeKey]?.classList.add('visited');
-                        await delay(200);
+                        await new Promise(resolve => setTimeout(resolve, 200));
                     }
                 }
             }
             
             currentElement.classList.remove('current');
             currentElement.classList.add('visited');
-            await delay(200);
+            await new Promise(resolve => setTimeout(resolve, 200));
         }
         
-        // Highlight the shortest path
         if (previous[targetNodeId] !== null) {
             let path = [targetNodeId];
             let current = targetNodeId;
@@ -408,11 +322,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 path.unshift(current);
             }
             
-            // Highlight path edges
             for (let i = 0; i < path.length - 1; i++) {
                 const edgeKey = `${path[i]}-${path[i + 1]}`;
                 lineElements[edgeKey]?.classList.add('found');
-                await delay(300);
+                await new Promise(resolve => setTimeout(resolve, 300));
             }
             
             messageArea.textContent = `Shortest path: ${path.join(' → ')} (Distance: ${distances[targetNodeId]})`;
@@ -423,6 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
         isRunning = false;
         startBtn.disabled = false;
     }
+
     function drawLine(parentPos, childPos, parentId, childId) {
         const line = document.createElement('div');
         line.classList.add('line');
@@ -438,7 +352,6 @@ document.addEventListener('DOMContentLoaded', () => {
         line.style.transform = `rotate(${angle}deg)`;
         
         treeContainer.appendChild(line);
-        // ENHANCEMENT: Store line elements for easy access later
         lineElements[`${parentId}-${childId}`] = line;
     }
 
@@ -494,7 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 lineElements[`${parentId}-${currentNodeId}`]?.classList.add('visited');
             }
             currentNodeElement.classList.add('current');
-            await delay(500);
+            await new Promise(resolve => setTimeout(resolve, 500));
             
             if (currentNodeId === targetNodeId) {
                 messageArea.textContent = `Found ${targetNodeId}!`;
@@ -513,7 +426,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             }
-            await delay(300);
+            await new Promise(resolve => setTimeout(resolve, 300));
         }
         if (!found && isRunning) messageArea.textContent = 'Target not found.';
         isRunning = false;
@@ -537,7 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
                  lineElements[`${parentId}-${currentNodeId}`]?.classList.add('visited');
             }
             currentNodeElement.classList.add('current');
-            await delay(500);
+            await new Promise(resolve => setTimeout(resolve, 500));
 
             if (currentNodeId === targetNodeId) {
                 messageArea.textContent = `Found ${targetNodeId}!`;
@@ -555,7 +468,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
             }
-            await delay(300);
+            await new Promise(resolve => setTimeout(resolve, 300));
         }
         if (!found && isRunning) messageArea.textContent = 'Target not found.';
         isRunning = false;
@@ -586,10 +499,20 @@ document.addEventListener('DOMContentLoaded', () => {
         messageArea.textContent = 'Running...';
         
         if (type === 'sorting') {
+            const bars = document.querySelectorAll('.bar');
+            const maxHeight = Math.max(...array);
+            const isRunningFunc = () => isRunning;
+            
             switch(selectedAlgorithm) {
-                case 'bubble-sort': await bubbleSort(); break;
-                case 'quick-sort': await quickSort(0, array.length - 1); break;
-                case 'merge-sort': await mergeSort(0, array.length - 1); break;
+                case 'bubble-sort': 
+                    await sortingAlgorithms.bubbleSort(array, bars, isRunningFunc, maxHeight, true); 
+                    break;
+                case 'quick-sort': 
+                    await sortingAlgorithms.quickSort(array, bars, 0, array.length - 1, isRunningFunc, maxHeight, true);
+                    break;
+                case 'merge-sort': 
+                    await sortingAlgorithms.mergeSort(array, bars, 0, array.length - 1, isRunningFunc, maxHeight, true); 
+                    break;
             }
         } else if (type === 'searching') {
             if (selectedAlgorithm === 'dijkstra') {
@@ -607,7 +530,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 await dijkstra(startNode, targetNode);
             } else {
-                // Tree search algorithms (BFS/DFS)
                 const targetNodeInput = document.getElementById('target-node');
                 const targetNode = targetNodeInput.value.toUpperCase();
                 if (!targetNode) {
@@ -637,6 +559,150 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             renderUI();
         }
+    });
+
+    // Comparison mode toggle
+    algorithmComparisonCheckbox.addEventListener('change', (e) => {
+        const isComparisonMode = e.target.checked;
+        
+        if (isComparisonMode) {
+            // Stop any running single algorithm sorting
+            if (isRunning) {
+                isRunning = false;
+                startBtn.disabled = false;
+                startBtn.textContent = 'Start';
+                messageArea.textContent = 'Switched to comparison mode';
+                
+                // Clear any visual highlights from stopped sorting
+                document.querySelectorAll('.bar').forEach(bar => {
+                    bar.classList.remove('comparing', 'sorted', 'pivot', 'musical-highlight');
+                });
+            }
+            
+            // Mute sound when entering comparison mode
+            if (audioSystem.isSoundEnabled) {
+                audioSystem.toggleSound();
+                muteBtn.textContent = 'Unmute';
+                muteBtn.style.backgroundColor = '#6b7280';
+            }
+            
+            // Hide single algorithm controls and volume controls
+            singleAlgorithmControls.classList.add('hidden');
+            singleAlgorithmSelect.classList.add('hidden');
+            singleAlgorithmButtons.classList.add('hidden');
+            volumeControls.classList.add('hidden');
+            
+            // Show comparison controls and visualization
+            visualizationContainer.classList.add('hidden');
+            comparisonMode.classList.remove('hidden');
+            comparisonControls.classList.remove('hidden');
+            messageArea.textContent = 'Comparison mode: Select algorithms to compare';
+            
+            // Generate arrays immediately when entering comparison mode
+            comparisonSystem.generateComparisonArrays(arraySize);
+        } else {
+            // Unmute sound when exiting comparison mode
+            if (!audioSystem.isSoundEnabled) {
+                audioSystem.toggleSound();
+                muteBtn.textContent = 'Mute';
+                muteBtn.style.backgroundColor = '#ea580c';
+            }
+            
+            // Show single algorithm controls and volume controls
+            singleAlgorithmControls.classList.remove('hidden');
+            singleAlgorithmSelect.classList.remove('hidden');
+            singleAlgorithmButtons.classList.remove('hidden');
+            volumeControls.classList.remove('hidden');
+            
+            // Hide comparison controls and show normal visualization
+            visualizationContainer.classList.remove('hidden');
+            comparisonMode.classList.add('hidden');
+            comparisonControls.classList.add('hidden');
+            messageArea.textContent = '';
+            comparisonSystem.resetComparison();
+            
+            // Re-enable sound for single algorithm mode
+            audioSystem.setComparisonMode(false);
+            comparisonSystem.exitComparisonMode();
+        }
+    });
+
+    // Start comparison
+    startComparisonBtn.addEventListener('click', async () => {
+        const algo1 = comparisonAlgorithm1.value;
+        const algo2 = comparisonAlgorithm2.value;
+        
+        if (algo1 === algo2) {
+            messageArea.textContent = 'Please select different algorithms to compare';
+            return;
+        }
+        
+        if (isRunning) {
+            messageArea.textContent = 'Please wait for current operation to complete';
+            return;
+        }
+        
+        isRunning = true;
+        startComparisonBtn.disabled = true;
+        messageArea.textContent = 'Running comparison...';
+        
+        // Update algorithm labels
+        document.getElementById('algorithm-1-label').textContent = 
+            algo1.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        document.getElementById('algorithm-2-label').textContent = 
+            algo2.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        
+        try {
+            await comparisonSystem.runSideBySideComparison([algo1, algo2], arraySize);
+            messageArea.textContent = 'Comparison complete!';
+        } catch (error) {
+            console.error('Comparison error:', error);
+            messageArea.textContent = 'Comparison failed: ' + error.message;
+        }
+        
+        isRunning = false;
+        startComparisonBtn.disabled = false;
+    });
+
+    // Reset comparison
+    resetComparisonBtn.addEventListener('click', () => {
+        // Stop any running comparison sorting
+        isRunning = false;
+        startComparisonBtn.disabled = false;
+        
+        // Stop comparison algorithms
+        comparisonSystem.stopComparison();
+        
+        // Clear visual highlights from comparison containers
+        const container1 = document.getElementById('comparison-container-1');
+        const container2 = document.getElementById('comparison-container-2');
+        
+        if (container1) {
+            container1.querySelectorAll('.bar').forEach(bar => {
+                bar.classList.remove('comparing', 'sorted', 'pivot', 'musical-highlight');
+            });
+        }
+        
+        if (container2) {
+            container2.querySelectorAll('.bar').forEach(bar => {
+                bar.classList.remove('comparing', 'sorted', 'pivot', 'musical-highlight');
+            });
+        }
+        
+        // Reset comparison system
+        comparisonSystem.resetComparison();
+        messageArea.textContent = 'Comparison reset';
+    });
+
+    // Volume control event listeners
+    volumeControl.addEventListener('input', (e) => {
+        audioSystem.setVolume(parseFloat(e.target.value) / 1000);
+    });
+    
+    muteBtn.addEventListener('click', () => {
+        const isEnabled = audioSystem.toggleSound();
+        muteBtn.textContent = isEnabled ? 'Mute' : 'Unmute';
+        muteBtn.style.backgroundColor = isEnabled ? '#ea580c' : '#6b7280';
     });
     
     // Initial render
